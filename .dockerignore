@@ -1,0 +1,10 @@
+# Keep the build context small; the populated vcmi/ submodule IS needed.
+.git
+vcmi/.git
+build
+vcmi/build
+*.webp
+*.gif
+*.mp4
+*.webm
+*.png
