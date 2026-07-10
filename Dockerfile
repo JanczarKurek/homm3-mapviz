@@ -57,6 +57,13 @@ RUN cmake -S vcmi -B vcmi/build -G Ninja \
     && test -x vcmi/build/bin/vcmiwallpaper \
     && echo "OK: vcmiwallpaper built at vcmi/build/bin/vcmiwallpaper"
 
+# Enable VCMI "development mode" so the tool resolves game data from the binary's
+# own directory at runtime (dataPaths() == ["."]). Dev mode requires config/ + Mods/
+# (created by the build) AND a binary literally named `vcmiclient` to be present --
+# it only checks the name exists, so a symlink to vcmiwallpaper is enough.
+# Separate layer: keeps the expensive compile layer cached.
+RUN ln -sf vcmiwallpaper /src/vcmi/build/bin/vcmiclient
+
 # The built binary lives at /src/vcmi/build/bin/vcmiwallpaper.
 # To actually render, run the container with your H3 data mounted next to it,
 # e.g. as /src/vcmi/build/bin/Data and /src/vcmi/build/bin/Maps (see README).

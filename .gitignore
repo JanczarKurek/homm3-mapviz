@@ -3,6 +3,8 @@
 /vcmi/build/
 
 # Rendered output / intermediate frames
+/out/
+*_frames/
 *.webp
 *.gif
 *.mp4

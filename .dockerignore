@@ -3,6 +3,8 @@
 vcmi/.git
 build
 vcmi/build
+out
+*_frames
 *.webp
 *.gif
 *.mp4

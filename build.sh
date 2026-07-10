@@ -32,6 +32,11 @@ cmake -S vcmi -B vcmi/build "${GEN[@]}" \
 
 "${BUILD[@]}"
 
+# Enable VCMI development mode (data resolved from the binary's own directory):
+# dev mode needs config/ + Mods/ (produced by the build) and a binary named
+# `vcmiclient` present -- a symlink to vcmiwallpaper satisfies the existence check.
+ln -sf vcmiwallpaper vcmi/build/bin/vcmiclient
+
 echo
 echo "Built: $(pwd)/vcmi/build/bin/vcmiwallpaper"
 echo "Run 'vcmi/build/bin/vcmiwallpaper --help' for options (needs H3 data at runtime; see README)."

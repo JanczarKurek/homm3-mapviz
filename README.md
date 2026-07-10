@@ -67,20 +67,45 @@ container next to the binary (see below).
 
 ## Run
 
-VCMI runs the tool in **development mode**, so it looks for game data next to
-the binary. Provide your own Heroes III data by placing (or symlinking) it into
-`vcmi/build/bin/`:
+You supply your own Heroes III data (the folder containing `Data/`, `Maps/`,
+`Mp3/`). VCMI runs the tool in **development mode**, resolving game data from the
+binary's own directory — `build.sh` / the Dockerfile create a `vcmiclient`
+symlink there so dev mode kicks in.
+
+### Easiest: `run.sh` (Docker)
+
+One command — mounts your data, renders, drops the file on your host. Builds the
+image on first use:
+
+```sh
+./run.sh --data "/path/to/HoMM 3" --map "/path/to/HoMM 3/Maps/SomeMap.h3m" \
+         --out out/wallpaper.webp -- --frames 48 --resolution 1920x1080
+```
+
+Everything after `--` is passed straight to `vcmiwallpaper`. `./run.sh --help`
+explains the wrapper flags. A few recipes:
+
+```sh
+# quick default webp of a map
+./run.sh --data ~/HoMM3 --map ~/HoMM3/Maps/Dragons.h3m
+
+# crisp 1080p mp4, longer loop, 2x zoom
+./run.sh --data ~/HoMM3 --map ~/HoMM3/Maps/Isle.h3m --out out/isle.mp4 -- \
+         --resolution 1920x1080 --frames 48 --scale 2
+
+# hero walks the level collecting resources (one-shot video)
+./run.sh --data ~/HoMM3 --map ~/HoMM3/Maps/Big.h3m --out out/tour.mp4 -- --walk
+```
+
+### Native
+
+Symlink your data next to the binary, then run it directly:
 
 ```sh
 cd vcmi/build/bin
 ln -s "/path/to/HoMM 3/Data"  Data
 ln -s "/path/to/HoMM 3/Maps"  Maps
 ln -s "/path/to/HoMM 3/Mp3"   Mp3    # optional (music, not needed for rendering)
-```
-
-Then render a map:
-
-```sh
 ./vcmiwallpaper --map "Maps/SomeMap.h3m" --frames 24 --out wallpaper.webp
 ```
 
