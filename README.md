@@ -35,8 +35,8 @@ Install VCMI's client build dependencies (Debian/Ubuntu names):
 ```sh
 sudo apt-get install build-essential cmake ninja-build git pkg-config \
     libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-    libboost-all-dev zlib1g-dev libtbb-dev libluajit-5.1-dev \
-    libavformat-dev libavcodec-dev libavutil-dev libswscale-dev ffmpeg
+    libboost-all-dev zlib1g-dev libminizip-dev libsquish-dev libtbb-dev libluajit-5.1-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev ffmpeg
 ```
 
 Then:

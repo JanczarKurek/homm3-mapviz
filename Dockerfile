@@ -26,12 +26,15 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         libsdl2-ttf-dev \
         libboost-all-dev \
         zlib1g-dev \
+        libminizip-dev \
+        libsquish-dev \
         libtbb-dev \
         libluajit-5.1-dev \
         libavformat-dev \
         libavcodec-dev \
         libavutil-dev \
         libswscale-dev \
+        libswresample-dev \
         ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
