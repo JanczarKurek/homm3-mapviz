@@ -1,36 +1,20 @@
 # vcmi-map-wallpaper
 
 Render a region of a **Heroes III of Might and Magic** map as a seamlessly
-looping **animated wallpaper** (or a hero-walk video), using
-[VCMI](https://vcmi.eu/)'s real in-game adventure-map renderer — so creatures,
-flags, water and terrain animate exactly as they do in the game.
-
-This repo is a thin packaging layer around the `vcmiwallpaper` tool. VCMI itself
-is pinned as a git submodule (a small fork carrying the tool + a few
-behavior-preserving renderer guards); this repo owns the build script,
-`Dockerfile`, and docs.
+looping **animated wallpaper**, using [VCMI](https://vcmi.eu/)'s real in-game adventure-map renderer.
 
 > **Note:** This does **not** ship any Heroes III data. You must own a copy of
 > the game and provide its data files at runtime (see [Run](#run)).
 
 ---
 
-## Repository layout
+## Build & deps
 
-```
-vcmi-map-wallpaper/
-├── vcmi/            # git submodule: VCMI fork (branch `wallpaper`) with the tool in vcmi/wallpaperapp/
-├── Dockerfile       # reproducible Debian 12 build test
-├── build.sh         # native build convenience wrapper
-├── LICENSE          # GPL-2.0-or-later (matches VCMI)
-└── README.md
-```
-
-## Build
+This mostly uses the VCMI deps + ffmpeg to render the actual video.
 
 ### Native (Linux)
 
-Install VCMI's client build dependencies (Debian/Ubuntu names):
+Install VCMI's client build dependencies (Debian/Ubuntu example):
 
 ```sh
 sudo apt-get install build-essential cmake ninja-build git pkg-config \
@@ -49,21 +33,16 @@ cd vcmi-map-wallpaper
 
 The binary is produced at `vcmi/build/bin/vcmiwallpaper`.
 
-> `ffmpeg` (the CLI) must be on `PATH` at **run** time — the tool shells out to
-> it to encode the animation.
+> `ffmpeg` CLI is required as a runtime dependency
 
-### Docker (generic-Linux build test)
+### Docker
 
-Proves the tool compiles on a clean distro with nothing but apt packages:
+There is a docker container you can use to build this if you are running a funny distro.
 
 ```sh
 git submodule update --init          # populate vcmi/ (already there after --recursive clone)
 docker build -t vcmi-map-wallpaper .
 ```
-
-A successful build ends with `OK: vcmiwallpaper built ...`. The image is a
-build-verification image; to render inside it you'd mount your H3 data into the
-container next to the binary (see below).
 
 ## Run
 
