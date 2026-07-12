@@ -369,10 +369,16 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	if(vm.count("help") || !vm.count("map"))
+	if(vm.count("help"))
 	{
 		std::cout << opts << std::endl;
-		return vm.count("map") ? 0 : 1;
+		return 0;
+	}
+
+	if(!vm.count("map"))
+	{
+		std::cerr << "Error: --map is required.\n\n" << opts << std::endl;
+		return 1;
 	}
 
 	// Resolve user-provided paths to absolute now, before any working-directory change.
