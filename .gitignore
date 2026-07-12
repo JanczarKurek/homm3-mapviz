@@ -1,6 +1,5 @@
-# CMake build trees
+# CMake build tree
 /build/
-/vcmi/build/
 
 # Rendered output / intermediate frames
 /out/
@@ -12,7 +11,7 @@
 *.png
 
 # Local H3 data / mods dropped next to the binary (never commit copyrighted data)
-/vcmi/build/bin/Data
-/vcmi/build/bin/Maps
-/vcmi/build/bin/Mp3
-/vcmi/build/bin/Mods/hota
+/build/bin/Data
+/build/bin/Maps
+/build/bin/Mp3
+/build/bin/Mods/hota

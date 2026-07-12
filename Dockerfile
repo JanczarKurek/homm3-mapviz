@@ -41,30 +41,24 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 WORKDIR /src
 COPY . /src
 
-# Only VCMI's client lib and the wallpaper tool are needed. Launcher/editor
-# (Qt), tests, translations, Discord and the ML AI are all disabled, so VCMI's
-# own nested submodules (googletest / innoextract / dependencies / discord-presence)
-# are not required -- no `--recursive` submodule init needed.
-RUN cmake -S vcmi -B vcmi/build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DENABLE_LAUNCHER=OFF \
-        -DENABLE_EDITOR=OFF \
-        -DENABLE_TRANSLATIONS=OFF \
-        -DENABLE_DISCORD=OFF \
-        -DENABLE_TEST=OFF \
-        -DENABLE_MMAI=OFF \
-    && ninja -C vcmi/build vcmiwallpaper \
-    && test -x vcmi/build/bin/vcmiwallpaper \
-    && echo "OK: vcmiwallpaper built at vcmi/build/bin/vcmiwallpaper"
+# The top-level CMakeLists.txt embeds the vcmi/ submodule as a subproject and
+# builds vcmiwallpaper on top of it. Launcher/editor (Qt), tests, translations,
+# Discord and the ML AI are disabled there, so VCMI's own nested submodules
+# (googletest / innoextract / dependencies / discord-presence) are not required
+# -- no `--recursive` submodule init needed for a Linux build.
+RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    && ninja -C build vcmiwallpaper \
+    && test -x build/bin/vcmiwallpaper \
+    && echo "OK: vcmiwallpaper built at build/bin/vcmiwallpaper"
 
 # Enable VCMI "development mode" so the tool resolves game data from the binary's
 # own directory at runtime (dataPaths() == ["."]). Dev mode requires config/ + Mods/
 # (created by the build) AND a binary literally named `vcmiclient` to be present --
 # it only checks the name exists, so a symlink to vcmiwallpaper is enough.
 # Separate layer: keeps the expensive compile layer cached.
-RUN ln -sf vcmiwallpaper /src/vcmi/build/bin/vcmiclient
+RUN ln -sf vcmiwallpaper /src/build/bin/vcmiclient
 
-# The built binary lives at /src/vcmi/build/bin/vcmiwallpaper.
+# The built binary lives at /src/build/bin/vcmiwallpaper.
 # To actually render, run the container with your H3 data mounted next to it,
-# e.g. as /src/vcmi/build/bin/Data and /src/vcmi/build/bin/Maps (see README).
-CMD ["vcmi/build/bin/vcmiwallpaper", "--help"]
+# e.g. as /src/build/bin/Data and /src/build/bin/Maps (see README).
+CMD ["build/bin/vcmiwallpaper", "--help"]

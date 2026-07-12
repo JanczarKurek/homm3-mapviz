@@ -1,0 +1,113 @@
+# Builds vcmiwallpaper.exe for Windows (MSVC x64).
+#
+# This mirrors the msvc-x64 job of VCMI's own CI (vcmi/.github/workflows/github.yml),
+# because we build VCMI itself as part of this project and therefore need exactly the
+# dependency set it expects. In particular the dependencies are NOT built from source:
+# VCMI publishes a prebuilt Conan cache, which CI/install_conan_dependencies.sh (inside
+# the submodule) downloads and restores.
+#
+# CI cannot render anything -- that needs Heroes III data, which we do not ship -- so
+# the test here is that the binary builds and that `--help` runs.
+
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: MSVC x64
+    runs-on: windows-2025-vs2026
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Recursive: we need the vcmi submodule, and vcmi in turn needs its own
+      # `dependencies` submodule -- that is where the Conan profiles live, and
+      # vcmi/conanfile.py imports its recipe from there.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Detect Visual Studio version
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstallationVersion = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationVersion
+          $vsMajor = ($vsInstallationVersion -split '\.')[0]
+          echo "MSBUILD_VS_VERSION=$vsMajor" >> $env:GITHUB_ENV
+
+      - name: Install MSVC v142 toolset
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+
+          $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          & $installer modify --installPath "$installPath" --add Microsoft.VisualStudio.Component.VC.v142.x86.x64 --quiet --norestart
+
+      - name: Install Conan and restore VCMI's prebuilt dependencies
+        run: |
+          pipx install conan
+          source '${{ github.workspace }}/vcmi/CI/install_conan_dependencies.sh' 'dependencies-windows-x64'
+
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: '14.29'
+
+      - name: Setup sccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: windows-msvc-x64
+          create-symlink: false
+          max-size: '5G'
+
+      # Generated into the submodule, because conanfile.py lives there and
+      # CMakePresets.json expects the toolchain at vcmi/conan-generated/.
+      # --build=never: everything must come from the cache restored above.
+      - name: Generate Conan toolchain
+        run: |
+          conan profile detect
+          conan install vcmi \
+            --output-folder=vcmi/conan-generated \
+            --build=never \
+            --profile=vcmi/dependencies/conan_profiles/msvc-x64 \
+            --conf="tools.cmake.cmaketoolchain:generator=Ninja" \
+            --conf="tools.microsoft.msbuild:vs_version=${MSBUILD_VS_VERSION}" \
+            -s "&:build_type=RelWithDebInfo" \
+            -o "&:target_pre_windows10=True"
+
+      - name: Add Conan runtime dependencies to PATH
+        run: sed 's#/[^/]*$##' vcmi/conan-generated/_runtime_libs.txt | sort -u >> "$GITHUB_PATH"
+
+      - name: Configure
+        run: cmake --preset windows-msvc-ninja-release
+
+      - name: Build
+        run: cmake --build --preset windows-msvc-ninja-release
+
+      # --help parses the command line and exits before VCMI touches any game data,
+      # so this works on a runner with no Heroes III installation.
+      - name: Smoke test
+        run: ./build/bin/vcmiwallpaper.exe --help
+
+      # build/bin also holds the dependency DLLs (copied there by VCMI's
+      # vcmi_copy_conan_runtime_deps) plus the config/ and Mods/ trees the tool
+      # reads at runtime, so the artifact is self-contained -- except for
+      # ffmpeg.exe, which the user supplies (see README).
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vcmiwallpaper-windows-x64
+          path: build/bin/
+          if-no-files-found: error

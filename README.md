@@ -8,9 +8,29 @@ looping **animated wallpaper**, using [VCMI](https://vcmi.eu/)'s real in-game ad
 
 ---
 
+## How this repo is put together
+
+The tool itself lives in [`src/`](src) and is an ordinary CMake project that
+builds one executable, `vcmiwallpaper`, on top of VCMI's client library.
+
+VCMI comes in as the [`vcmi/`](https://github.com/JanczarKurek/vcmi/tree/wallpaper)
+submodule. That's a fork, but a deliberately thin one: it carries two patches and
+nothing else.
+
+1. VCMI uses `CMAKE_SOURCE_DIR` in places where it means `PROJECT_SOURCE_DIR`,
+   which is harmless while VCMI is the top-level project and breaks the moment it
+   is embedded in another one. Fixing that is what lets this repo do
+   `add_subdirectory(vcmi)` at all.
+2. The adventure-map renderer reaches through the player interface for a handful
+   of values that are also available from the loaded map. Sourcing them from the
+   map instead lets the renderer run with a map loaded but no game started.
+
+Both are upstreamable, so the fork is meant to be temporary. Nothing
+wallpaper-specific was added to VCMI.
+
 ## Build & deps
 
-This mostly uses the VCMI deps + ffmpeg to render the actual video.
+Mostly VCMI's own dependencies, plus `ffmpeg` to encode the video.
 
 ### Native (Linux)
 
@@ -31,9 +51,10 @@ cd vcmi-map-wallpaper
 ./build.sh
 ```
 
-The binary is produced at `vcmi/build/bin/vcmiwallpaper`.
+The binary is produced at `build/bin/vcmiwallpaper`.
 
-> `ffmpeg` CLI is required as a runtime dependency
+> The `ffmpeg` **CLI** is a runtime dependency — the tool renders PNG frames and
+> shells out to it to encode them. If it isn't on `PATH`, pass `--ffmpeg /path/to/ffmpeg`.
 
 ### Docker
 
@@ -44,12 +65,38 @@ git submodule update --init          # populate vcmi/ (already there after --rec
 docker build -t vcmi-map-wallpaper .
 ```
 
+### Windows
+
+Every push builds `vcmiwallpaper.exe` — grab the `vcmiwallpaper-windows-x64`
+artifact from the [Actions tab](../../actions/workflows/windows.yml). It ships
+with the DLLs it needs, but **not** `ffmpeg.exe`; install that separately
+(`winget install ffmpeg`) or point `--ffmpeg` at it.
+
+To build it yourself you need the same setup VCMI uses — MSVC plus its prebuilt
+Conan dependencies. [`.github/workflows/windows.yml`](.github/workflows/windows.yml)
+is the executable version of those instructions; the short form is:
+
+```sh
+pipx install conan
+source vcmi/CI/install_conan_dependencies.sh dependencies-windows-x64
+conan install vcmi --output-folder=vcmi/conan-generated --build=never \
+    --profile=vcmi/dependencies/conan_profiles/msvc-x64 \
+    --conf="tools.cmake.cmaketoolchain:generator=Ninja" \
+    -s "&:build_type=RelWithDebInfo" -o "&:target_pre_windows10=True"
+cmake --preset windows-msvc-ninja-release
+cmake --build --preset windows-msvc-ninja-release
+```
+
+Note this needs `git submodule update --init --recursive`: the Conan profiles
+live in VCMI's own `dependencies` submodule.
+
 ## Run
 
 You supply your own Heroes III data (the folder containing `Data/`, `Maps/`,
-`Mp3/`). VCMI runs the tool in **development mode**, resolving game data from the
-binary's own directory — `build.sh` / the Dockerfile create a `vcmiclient`
-symlink there so dev mode kicks in.
+`Mp3/`). The tool resolves game data from the binary's own directory. On Linux
+that means VCMI's **development mode**, which `build.sh` and the Dockerfile
+enable for you by dropping a `vcmiclient` symlink next to the binary; on Windows
+it's the default and needs no setup.
 
 ### Easiest: `run.sh` (Docker)
 
@@ -81,15 +128,18 @@ explains the wrapper flags. A few recipes:
 Symlink your data next to the binary, then run it directly:
 
 ```sh
-cd vcmi/build/bin
+cd build/bin
 ln -s "/path/to/HoMM 3/Data"  Data
 ln -s "/path/to/HoMM 3/Maps"  Maps
 ln -s "/path/to/HoMM 3/Mp3"   Mp3    # optional (music, not needed for rendering)
 ./vcmiwallpaper --map "Maps/SomeMap.h3m" --frames 24 --out wallpaper.webp
 ```
 
+On Windows it's the same idea without the symlinks: unzip the artifact, put
+`Data/` (and `Maps/`) next to `vcmiwallpaper.exe`, and run it from that folder.
+
 `--help` lists every option. Highlights (full details in
-[`vcmi/wallpaperapp/README.md`](vcmi/wallpaperapp/README.md)):
+[`docs/vcmiwallpaper.md`](docs/vcmiwallpaper.md)):
 
 - `--x/--y/--width/--height` or `--resolution 1920x1080` — pick the region / exact output size
 - `--scale N` — crisp integer nearest-neighbour upscale
@@ -97,26 +147,16 @@ ln -s "/path/to/HoMM 3/Mp3"   Mp3    # optional (music, not needed for rendering
 - `--walk` — a hero tours the level collecting every reachable resource pile (one-shot video)
 - `--out` extension picks the format: `.webp` (animated, wallpaper-daemon friendly), `.gif`, `.mp4`, `.webm`
 
+> Keep the output path ASCII on Windows. VCMI narrows paths through the active
+> code page while SDL expects UTF-8, so accented characters in the output path
+> (a `Pulpit`/Desktop under a name like `Michał`) can land the file somewhere
+> unexpected.
+
 ### Modded maps (HotA etc.)
 
-A map may require a VCMI mod. Install the mod under `vcmi/build/bin/Mods/<modid>/`
+A map may require a VCMI mod. Install the mod under `build/bin/Mods/<modid>/`
 (e.g. Horn of the Abyss into `.../Mods/hota/`) and enable it in your VCMI
 `modSettings.json`. Mods are large and are **not** included here.
-
-## Sharing this repo
-
-The submodule currently points at the fork by a **local path** so it builds on
-the machine it was created on. Before others can clone it:
-
-1. Push the VCMI fork branch `wallpaper` to a public remote, e.g.
-   `https://github.com/<your-github-user>/vcmi.git`.
-2. Update the submodule URL to that remote:
-   ```sh
-   git config -f .gitmodules submodule.vcmi.url https://github.com/<your-github-user>/vcmi.git
-   git submodule sync
-   git add .gitmodules && git commit -m "Point vcmi submodule at public fork"
-   ```
-3. Push this outer repo.
 
 ## License
 

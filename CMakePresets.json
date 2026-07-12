@@ -1,0 +1,60 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 24,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "generator": "Ninja"
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Linux Release",
+            "description": "Native build using the system SDL2/Boost/ffmpeg dev packages",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "windows-msvc-ninja-release",
+            "displayName": "Windows x64 RelWithDebInfo (MSVC + Ninja + Conan)",
+            "description": "Mirrors VCMI's own CI preset. Requires `conan install` to have been run into vcmi/conan-generated first -- see .github/workflows/windows.yml",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcmi/conan-generated/conan_toolchain.cmake",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+                "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "Embedded",
+                "CMAKE_C_FLAGS_RELWITHDEBINFO": "/O2 /Ob1 /DNDEBUG /Z7",
+                "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "/O2 /Ob1 /DNDEBUG /Z7",
+                "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+                "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
+                "ENABLE_CCACHE": "ON",
+                "ENABLE_MULTI_PROCESS_BUILDS": "OFF",
+                "ENABLE_PCH": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "linux-release",
+            "configurePreset": "linux-release",
+            "targets": [
+                "vcmiwallpaper"
+            ]
+        },
+        {
+            "name": "windows-msvc-ninja-release",
+            "configurePreset": "windows-msvc-ninja-release",
+            "targets": [
+                "vcmiwallpaper"
+            ]
+        }
+    ]
+}

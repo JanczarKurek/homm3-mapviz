@@ -1,4 +1,4 @@
 [submodule "vcmi"]
 	path = vcmi
-	url = /home/janczarknurek/build/vcmi
+	url = https://github.com/JanczarKurek/vcmi.git
 	branch = wallpaper

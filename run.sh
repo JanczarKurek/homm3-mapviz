@@ -9,7 +9,7 @@
 #            --out out/adventure.webp -- --frames 48 --resolution 1920x1080
 #
 # Everything after `--` is passed straight to vcmiwallpaper (see its --help:
-#   docker run --rm vcmi-map-wallpaper vcmi/build/bin/vcmiwallpaper --help
+#   docker run --rm vcmi-map-wallpaper build/bin/vcmiwallpaper --help
 # for --walk / --pan-to / --scale / --follow / etc.).
 #
 set -euo pipefail
@@ -83,7 +83,7 @@ fi
 # H3 Data (required) and Maps (optional) go next to the binary so VCMI's
 # development mode finds them; the map's own dir is mounted at /maps; the output
 # dir is mounted writable (intermediate PNG frames also land there).
-BIN=/src/vcmi/build/bin
+BIN=/src/build/bin
 MOUNTS=(
     -v "$DATA/Data":"$BIN/Data":ro
     -v "$MAP_DIR":/maps:ro
@@ -98,6 +98,6 @@ docker run --rm \
     -e HOME=/tmp \
     "${MOUNTS[@]}" \
     "$IMAGE" \
-    vcmi/build/bin/vcmiwallpaper --map "/maps/$MAP_BASE" --out "/out/$OUT_BASE" "${EXTRA[@]}"
+    build/bin/vcmiwallpaper --map "/maps/$MAP_BASE" --out "/out/$OUT_BASE" "${EXTRA[@]}"
 
 echo ">> Done: $OUT_DIR/$OUT_BASE"

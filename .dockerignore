@@ -2,7 +2,6 @@
 .git
 vcmi/.git
 build
-vcmi/build
 out
 *_frames
 *.webp
